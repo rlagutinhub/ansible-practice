@@ -1,0 +1,2 @@
+check file docker_messages with path /var/log/messages
+    if match 'out of memory: Kill process' for 2 cycles then exec "/srv/southbridge/bin/docker-oom-report.sh"

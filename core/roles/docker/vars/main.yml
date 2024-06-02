@@ -1,0 +1,21 @@
+---
+docker_package:
+  engine:
+    name: docker-engine
+    baseurl: https://yum.dockerproject.org/repo/main/centos/7/
+    gpgkey: https://yum.dockerproject.org/gpg
+  ce:
+    name: docker-ce
+    baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+    gpgkey: https://download.docker.com/linux/centos/gpg
+
+docker_sb_etc: "/srv/southbridge/etc"
+docker_sb_libexec: "/srv/southbridge/libexec"
+docker_sb_check: "/srv/southbridge/check/hourly"
+
+docker_iptables_service: "sb-iptables-docker"
+docker_iptables_script: "{{ docker_iptables_service }}.sh"
+docker_iptables_config: "{{ docker_iptables_service }}.conf"
+docker_iptables_chain: "SB.docker"
+docker_iptables_check_script: "_sb_iptables.docker"
+...

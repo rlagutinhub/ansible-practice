@@ -1,0 +1,34 @@
+---
+# use kubespray to create kubernetes cluster
+# This role install backups, checks and helpers script
+#
+
+- name: "Touch file: disable iptables check"
+  file:
+    path: /root/.iptablescheck
+    state: touch
+  changed_when: false
+
+- name: yum install k8sh
+  yum:
+    name: k8sh
+    state: present
+
+- name: Template kubernetes rsyslog configs
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: 'etc/rsyslog.d/kubernetes.conf',
+        dest: '/etc/rsyslog.d/kubernetes.conf' }
+    - { src: 'etc/logrotate.d/kubernetes',
+        dest: '/etc/logrotate.d/kubernetes' }
+  notify:
+    - restart rsyslog
+
+- import_tasks: swapoff.yml
+
+...

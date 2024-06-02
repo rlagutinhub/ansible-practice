@@ -1,0 +1,35 @@
+---
+- name: Fail if iptables custom chain enabled and external interface undefined
+  fail:
+    msg: "docker_iptables_public_interface IS NOT DEFINED, CANNOT CONTINUE"
+  when:
+    - docker_iptables_enable
+    - docker_iptables_public_interface == "UNDEF"
+
+- name: Check required dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ docker_sb_check }}"
+    - "{{ docker_sb_libexec }}"
+    - "{{ docker_sb_etc }}"
+  tags: [ iptables ]
+
+- name: Docker iptables whitelist
+  template:
+    src: "iptables/{{ docker_iptables_config }}.j2"
+    dest: "{{ docker_sb_etc }}/{{ docker_iptables_config }}"
+    mode: 0644
+  register: docker_whitelist
+  tags: [ iptables ]
+
+- import_tasks: "iptables-systemd.yml"
+
+- name: Docker iptables service check script
+  template:
+    src: "iptables/{{ docker_iptables_check_script }}.j2"
+    dest: "{{ docker_sb_check }}/{{ docker_iptables_check_script }}"
+    mode: 0755
+  tags: [ iptables ]
+...

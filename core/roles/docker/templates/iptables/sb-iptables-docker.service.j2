@@ -1,0 +1,20 @@
+#
+# THIS FILE IS MANAGED BY ANSIBLE, ALL CHANGES WILL BE LOST
+#
+[Unit]
+Description=Custom firewall chain for docker service
+After=syslog.target iptables.service
+PartOf=docker.service
+AssertPathExists={{ docker_sb_etc }}/{{ docker_iptables_config }}
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart={{ docker_sb_libexec }}/{{ docker_iptables_script }} start
+ExecReload={{ docker_sb_libexec }}/{{ docker_iptables_script }} reload
+ExecStop={{ docker_sb_libexec }}/{{ docker_iptables_script }} stop
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=basic.target

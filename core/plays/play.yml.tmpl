@@ -1,0 +1,20 @@
+---
+# vim: se ft=yaml.ansible:
+- hosts:
+  - "$THOST"
+  vars:
+    ansible_ssh_user: "${LOGIN}"
+    ansible_ssh_port: "{{ ansible_port | default('22', true) }}"
+    ansible_ssh_common_args: >-
+        {{ ( ansible_ssh_proxy is undefined or ansible_ssh_proxy == '' )
+        | ternary('', '-o ProxyCommand="ssh -W %h:%p -q ${PROXY_USER}@'
+        ~ ansible_ssh_proxy|default('') ~ ' -p ${PROXY_PORT}'
+        ~ ' "') }}
+  roles:
+    - init-variables
+    - sudo
+    - admin
+    - base
+    - docker
+    - kubernetes
+    - kernel4

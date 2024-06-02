@@ -1,0 +1,43 @@
+---
+- name: "Docker iptables service script"
+  template:
+    src: "iptables/{{ docker_iptables_script }}.j2"
+    dest: "{{ docker_sb_libexec }}/{{ docker_iptables_script }}"
+    mode: 0744
+  register: docker_iptables_script_result
+  tags: [ iptables ]
+
+- name: "Docker iptables service unit"
+  template:
+    src: "iptables/{{ docker_iptables_service }}.service.j2"
+    dest: "/etc/systemd/system/{{ docker_iptables_service }}.service"
+    mode: 0644
+  register: docker_iptables_unit_result
+  tags: [ iptables ]
+
+- name: "Docker iptables service manage"
+  systemd:
+    name: "{{ docker_iptables_service }}"
+    state: "{{ docker_iptables_enable|ternary('started','stopped') }}"
+    enabled: "{{ docker_iptables_enable|ternary('yes','no') }}"
+  tags: [ iptables ]
+
+- name: "Docker iptables service reloaded (systemd)"
+  systemd:
+    name: "{{ docker_iptables_service }}"
+    state: reloaded
+  when:
+    - docker_whitelist.changed
+    - docker_iptables_enable
+  tags: [ iptables ]
+
+- name: "Docker iptables service restarted (systemd)"
+  systemd:
+    name: "{{ docker_iptables_service }}"
+    state: restarted
+    daemon_reload: yes
+  when:
+    - docker_iptables_unit_result.changed or docker_iptables_script_result.changed
+    - docker_iptables_enable
+  tags: [ iptables ]
+...

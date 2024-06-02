@@ -1,0 +1,13 @@
+check file cron_test with path /tmp/monit_cron_test
+    if timestamp > 20 minutes then alert
+
+check process crond with pidfile /var/run/crond.pid
+    start program = "/bin/systemctl start crond"
+    stop program = "/bin/systemctl stop crond"
+    group crond
+    if 2 restarts within 2 cycles then alert
+    if 3 restarts within 3 cycles then timeout
+
+check file crond_messages with path /var/log/cron
+    if match 'WRONG FILE OWNER' then alert
+    if match 'BAD FILE MODE' then alert

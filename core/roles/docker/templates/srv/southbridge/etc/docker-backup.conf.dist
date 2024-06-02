@@ -1,0 +1,69 @@
+# autodetect docker container
+AUTODETECT=yes
+
+# service list
+SERVICE_LIST="5432/tcp:postgresql 3306/tcp:mysql 27017/tcp:mongodb 8086/tcp:influxdb"
+
+# Mail setup
+# What would you like to be mailed to you?
+# - log   : send only log file
+# - files : send log file and sql files as attachments (see docs)
+# - stdout : will simply output the log to the screen if run manually.
+# - quiet : Only send logs if an error occurs to the MAILADDR.
+MAILCONTENT="quiet"
+
+# Email Address to send mail to? (user@domain.com)
+MAILADDR="root"
+
+###########################################
+#
+# All backup enable
+
+docker_backup=yes
+
+###########################################
+# MySQL
+# MySQL Backup enable
+mysql_backup=yes
+
+# MySQL container name list
+mysql_containers=""
+
+# MySQL container exclude name list (do not backup)
+mysql_exclude_containers=""
+
+
+###########################################
+# PostgreSQL
+# PostgreSQL Backup enable
+postgresql_backup=yes
+
+# PostgreSQL container name list
+postgresql_containers=""
+
+# PostgreSQL container exclude name list (do not backup)
+postgresql_exclude_containers=""
+
+
+###########################################
+# MongoDB
+# MongoDB Backup enable
+mongodb_backup=yes
+
+# MongoDB container name list
+mongodb_containers=""
+
+# MongoDB container exclude name list (do not backup)
+mongodb_exclude_containers=""
+
+###########################################
+# InfluxDB
+# InfluxDB Backup enable
+influxdb_backup=yes
+
+# influxDB container name list
+influxdb_containers=""
+
+# influxDB container exclude name list (do not backup)
+influxdb_exclude_containers=""
+

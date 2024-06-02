@@ -1,0 +1,30 @@
+---
+docker_bip: ''
+docker_bridge: ''
+docker_dns: '[]'
+docker_dns_search: '[]'
+docker_ip: ''
+docker_insecure_registries: '[]'
+docker_ip_masq: 'true'
+docker_storage_driver: 'overlay2'
+docker_runtime_dir: ''
+
+docker_backup_cron_time: "00 03 * * *"
+docker_gc_cron_time: "00 02 * * *"
+docker_container_dir: "/var/lib/docker"
+
+#docker_highload_lavg5_barrier: 5
+docker_monit_la5: "{{ base_monit_la5|default('__LA5__') }}"
+docker_monit_la15: "{{ base_monit_la15|default('__LA15__') }}"
+
+docker_pstree_cron_time: "* * * * *"
+
+docker_package_name: ce
+
+docker_iptables_enable: false
+docker_iptables_public_interface: "UNDEF"
+docker_iptables_permit_list:
+  - 127.0.0.0/8
+
+# docker_yum_exclude moved into init-variables/tasks/main.yml
+...

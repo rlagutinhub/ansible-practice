@@ -1,0 +1,72 @@
+---
+- name: Abort if system is not RHEL7
+  fail: msg="System is not RedHat family 7 distro"
+  when:
+    - ansible_os_family != "RedHat"
+
+- name: Abort if system is not RHEL7
+  fail: msg="System is not RedHat family 7 distro"
+  when:
+    - ansible_distribution_major_version|int < 7
+
+- name: install packages
+  yum:
+    name: "kernel-ml-{{ kernel4_version }}"
+    enablerepo: southbridge-stable
+    state: present
+  register: kernel4_installed
+
+- block:
+  - name: stat /etc/grub2.cfg
+    stat:
+      path: /etc/grub2.cfg
+    register: kernel4_grub2_cfg
+
+  - name: stat /etc/grub2-efi.cfg
+    stat:
+      path: /etc/grub2-efi.cfg
+    register: kernel4_grub2_efi_cfg
+
+  - name: set grub2 config path
+    set_fact:
+      kernel4_grub2_config_path: "{{ kernel4_grub2_cfg.stat.lnk_source | dirname }}"
+    when:
+      - kernel4_grub2_cfg.stat.exists
+      - kernel4_grub2_cfg.stat.readable
+
+  - name: set grub2 config path efi
+    set_fact:
+      kernel4_grub2_config_path: "{{ kernel4_grub2_efi_cfg.stat.lnk_source | dirname }}"
+    when:
+      - kernel4_grub2_efi_cfg.stat.exists
+      - kernel4_grub2_efi_cfg.stat.readable
+
+  - name: register kernel version grub2
+    shell: >
+      cat {{ kernel4_grub2_config_path }}/grub.cfg | grep menuentry | grep elrepo | head -1 | awk -F "'" '{ print $2 }'
+    when: kernel4_grub2_config_path != ""
+    ## shell command is necessay to get boot_kernel_version
+    tags: skip_ansible_lint
+    register: boot_kernel_version_output
+    changed_when: false
+
+  - name: set kernel version
+    set_fact:
+      boot_kernel_version: "{{ boot_kernel_version_output.stdout }}"
+
+  - name: Set grubenv
+    shell: |
+      grub2-editenv {{ kernel4_grub2_config_path }}/grubenv create
+      grub2-editenv {{ kernel4_grub2_config_path }}/grubenv set saved_entry='{{ boot_kernel_version }}'
+    when:
+      - boot_kernel_version != ""
+
+  when: kernel4_installed.changed
+
+- name: remove old kernel
+  yum:
+    name: kernel.x86_64
+    state: absent
+  when:
+    - "'el7.elrepo.x86_64' in ansible_kernel"
+...

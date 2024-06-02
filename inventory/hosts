@@ -1,0 +1,4 @@
+[student200]
+vs01.s200.slurm.io ansible_host=172.21.200.10
+vs02.s200.slurm.io ansible_host=172.21.200.11
+vs03.s200.slurm.io ansible_host=172.21.200.12

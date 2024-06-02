@@ -1,0 +1,7 @@
+# THIS FILE IS MANAGED BY ANSIBLE, ALL CHANGES WILL BE LOST
+
+{% for ip in docker_iptables_permit_list %}
+{% if ip|ipv4 %}
+{{ ip }}
+{% endif %}
+{% endfor %}

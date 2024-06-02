@@ -1,0 +1,4 @@
+---
+# kernel4_yum_exclude moved into init-variables/tasks/main.yml
+kernel4_version: "4.20.13-1.el7.elrepo.x86_64"
+...

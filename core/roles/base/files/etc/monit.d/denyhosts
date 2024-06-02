@@ -1,0 +1,4 @@
+check process denyhosts with pidfile /var/lock/subsys/denyhosts
+    start program = "/sbin/service denyhosts start"
+    stop program = "/sbin/service denyhosts stop"
+    if 3 restarts within 6 cycles then exec "/bin/bash -c '/usr/bin/monit unmonitor denyhosts && /bin/sleep 1800 && /usr/bin/monit monitor denyhosts'"

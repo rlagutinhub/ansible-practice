@@ -1,0 +1,27 @@
+{
+{% if (docker_runtime_dir != '') %}
+    "graph": "{{docker_runtime_dir}}",
+{% endif %}
+{% if (docker_bip != '') %}
+    "bip": "{{docker_bip}}",
+{% endif %}
+{% if (docker_bridge != '') %}
+    "bridge": "{{docker_bridge}}",
+{% endif %}
+{% if (docker_dns != '[]') %}
+    "dns": ["{{ docker_dns|join('","')}}"],
+{% endif %}
+{% if (docker_dns_search != '[]') %}
+    "dns-search": ["{{ docker_dns_search|join('","')}}"],
+{% endif %}
+{% if (docker_insecure_registries != '[]') %}
+    "insecure-registries": [{{ docker_insecure_registries|join(',')}}],
+{% endif %}
+{% if (docker_ip != '') %}
+    "ip": "{{docker_ip}}",
+{% endif %}
+{% if (docker_ip_masq == 'false') %}
+    "ip-masq": "{{docker_ip_masq}}",
+{% endif %}
+    "storage-driver": "{{ docker_storage_driver }}"
+}

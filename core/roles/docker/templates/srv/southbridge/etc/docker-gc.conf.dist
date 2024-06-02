@@ -1,0 +1,2 @@
+# days for keep stopped container
+DAYS="30"

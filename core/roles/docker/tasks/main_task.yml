@@ -1,0 +1,163 @@
+---
+- name: Abort if system is not RHEL7
+  fail: msg="System is not RedHat family 6 or 7 distro"
+  when: ansible_os_family != "RedHat" and ansible_distribution_major_version != "7"
+
+- name: Abort if no role kernel4
+  fail: msg="no role kernel4 in host config"
+  when:
+    - docker_storage_driver == 'overlay2'
+    - "'kernel4' not in roles"
+
+- name: "install docker repository for {{docker_package_name}}"
+  become: true
+  yum_repository:
+    name: docker
+    description: 'Docker Repository'
+    baseurl: "{{docker_package[docker_package_name]['baseurl']}}"
+    gpgcheck: no
+    gpgkey: "{{docker_package[docker_package_name]['gpgkey']}}"
+
+- name: install packages
+  become: true
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{docker_package[docker_package_name]['name']}}"
+    - docker-compose
+    - git
+    - ctop
+
+- name: create subdirectories
+  become: true
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /etc/systemd/system/docker.service.d
+    - /etc/docker
+    - /srv/southbridge/bin
+    - /srv/southbridge/etc
+
+- name: copy configs
+  become: true
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'etc/docker/daemon.json',
+        dest: '/etc/docker/daemon.json',
+        mode: '0644' }
+    - { src: 'etc/systemd/system/docker.service.d/docker.conf',
+        dest: '/etc/systemd/system/docker.service.d/docker.conf',
+        mode: '0644' }
+  notify:
+    - restart docker
+
+- name: detect docker container path
+  shell: docker info | grep 'Docker Root Dir:' | awk -F ':' '{ print $2}'
+  register: docker_path_stdout
+  changed_when: false
+
+- name: check docker container path
+  stat:
+    path: "{{docker_path_stdout.stdout_lines[0]|trim}}"
+  when: docker_path_stdout.stdout_lines[0] is defined
+  register: docker_path_check
+
+- name: set variable for docker container path
+  set_fact:
+    docker_container_dir: "{{docker_path_stdout.stdout_lines[0]|trim}}"
+  when: docker_path_check is defined and docker_path_check.stat is defined and docker_path_check.stat.isdir is defined and docker_path_check.stat.isdir
+
+- name: copy bin scripts
+  become: yes
+  copy:
+    src: srv/southbridge/bin/
+    dest: /srv/southbridge/bin
+    mode: '0755'
+
+- name: copy config scripts
+  become: true
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'srv/southbridge/etc/docker-backup.conf.dist',
+        dest: '/srv/southbridge/etc/docker-backup.conf.dist',
+        mode: '0644' }
+    - { src: 'srv/southbridge/etc/docker-backup.conf',
+        dest: '/srv/southbridge/etc/docker-backup.conf',
+        mode: '0644' }
+    - { src: 'srv/southbridge/etc/docker-gc.conf.dist',
+        dest: '/srv/southbridge/etc/docker-gc.conf.dist',
+        mode: '0644' }
+    - { src: 'srv/southbridge/etc/docker-gc.conf',
+        dest: '/srv/southbridge/etc/docker-gc.conf',
+        mode: '0644' }
+    - { src: 'etc/logrotate.d/docker',
+        dest: '/etc/logrotate.d/docker',
+        mode: '0644' }
+
+
+- name: set cron task for rebuilding docker containers pstree
+  cron:
+    name: docker-pstree
+    user: root
+    job: "/srv/southbridge/bin/docker-pstree.sh >/dev/null 2>&1"
+    cron_file: docker-pstree
+    minute: "{{ docker_pstree_cron_time.split(' ')[0] }}"
+    hour: "{{ docker_pstree_cron_time.split(' ')[1] }}"
+    day: "{{ docker_pstree_cron_time.split(' ')[2] }}"
+    month: "{{ docker_pstree_cron_time.split(' ')[3] }}"
+    weekday: "{{ docker_pstree_cron_time.split(' ')[4] }}"
+    state: present
+  notify: reload crond
+
+- name: set cron task for remove old container and images
+  cron:
+    name: docker-gc
+    user: root
+    job: "/srv/southbridge/bin/docker-gc.sh >> /var/log/docker-gc.log 2>&1"
+    cron_file: docker-gc
+    minute: "{{ docker_gc_cron_time.split(' ')[0] }}"
+    hour: "{{ docker_gc_cron_time.split(' ')[1] }}"
+    day: "{{ docker_gc_cron_time.split(' ')[2] }}"
+    month: "{{ docker_gc_cron_time.split(' ')[3] }}"
+    weekday: "{{ docker_gc_cron_time.split(' ')[4] }}"
+    state: present
+  notify: reload crond
+
+- name: set sysctl settings
+  sysctl:
+    sysctl_file: /etc/sysctl.d/docker.conf
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  with_items:
+    - { name: 'net.ipv4.ip_forward',
+        value: '1' }
+
+- name: disable iptables check
+  file:
+    path: /root/.iptablescheck
+    state: touch
+  changed_when: false
+
+- name: enable docker service
+  become: true
+  systemd:
+    daemon_reload: yes
+    name: docker
+    enabled: yes
+
+- import_tasks: iptables.yml
+...

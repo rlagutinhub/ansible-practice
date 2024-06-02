@@ -1,0 +1,10 @@
+/var/log/kubernetes.log {
+    daily
+    rotate 8
+    compress
+    size 1M
+    copytruncate
+    dateext
+    missingok
+    notifempty
+}

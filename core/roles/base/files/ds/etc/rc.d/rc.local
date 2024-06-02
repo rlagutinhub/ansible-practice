@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# This script will be executed *after* all the other init scripts.
+# You can put your own initialization stuff in here if you don't
+# want to do the full Sys V style init stuff.
+
+touch /var/lock/subsys/local
+
+/sbin/ifconfig eth0 txqueuelen 10000
+echo 500000 >/proc/sys/dev/raid/speed_limit_min
+echo performance >/sys/module/pcie_aspm/parameters/policy
+/sbin/grubby --args=pcie_aspm=off --update-kernel=ALL

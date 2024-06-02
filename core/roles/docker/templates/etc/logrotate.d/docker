@@ -1,0 +1,23 @@
+/var/log/docker-gc.log {
+    daily
+    rotate 4
+    compress
+    size 1M
+    copytruncate
+    dateext
+    missingok
+    notifempty
+}
+
+{% if docker_container_dir is defined %}
+{{docker_container_dir}}/containers/*/*.log {
+    daily
+    rotate 4
+    compress
+    size 1M
+    copytruncate
+    dateext
+    missingok
+    notifempty
+}
+{% endif%}

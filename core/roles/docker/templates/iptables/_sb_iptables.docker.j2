@@ -1,0 +1,86 @@
+#!/bin/bash
+# THIS FILE IS MANAGED BY ANSIBLE, ALL CHANGES WILL BE LOST
+#
+# Script for {{ docker_iptables_chain }} iptables chain check
+# Southbridge LLC, 2017 A.D.
+#
+
+set -o nounset
+set -E
+
+readonly chain="{{ docker_iptables_chain }}"
+readonly svc="{{ docker_iptables_service }}"
+
+# {% raw %}
+readonly PATH=/bin:/sbin:/usr/bin:/usr/sbin
+readonly bn="$(basename "$0")"
+
+main() {
+    local FN=${FUNCNAME[0]}
+    local -i lc=0
+    local reason="UNKNOWN"
+
+    trap except ERR
+    # Если сервис выключен - вываливаемся
+    systemctl is-enabled "${svc}.service" >/dev/null || exit 0
+
+    # Проверка, что нужная цепочка существует
+    if iptables --wait -t filter -n -L "$chain" >/dev/null 2>&1
+    then
+        # Проверка, что она не пуста (т.е. есть более 2-х строк в выводе)
+        lc=$(iptables --wait -t filter -n -L "$chain" | wc -l)
+        if (( lc < 3 )); then
+            reason="CHAIN IS EMPTY"
+            _service reload
+        fi
+        # Проверка, что нужные пакеты направляются в цепочку
+        if iptables --wait -t filter -n -L FORWARD | grep -Fq -- "$chain"
+        then
+	    # Проверка, что направление в цепочку находится не ниже DOCKER-ISOLATION
+	    local -i chain_position=0 normal_position=0
+
+	    chain_position=$(iptables --wait -t filter -n -L FORWARD | awk -v chain="$chain" '$0 ~ chain { print NR; exit }')
+	    normal_position=$(iptables --wait -t filter -n -L FORWARD | awk '/^DOCKER-ISOLATION/ { print NR + 1; exit }')
+
+	    if (( chain_position > 4 && chain_position > normal_position )); then
+		reason="CHAIN JUMP IS MOVED DOWN"
+		_service reload
+	    else
+		true
+	    fi
+        else
+            reason="CHAIN IS UNUSED"
+            _service reload
+        fi
+    else
+        reason="CHAIN IS ABSENT"
+        _service restart
+    fi
+
+    # Проверка, не сделали ли 'service iptables save'
+    if grep -Fq "$chain" /etc/sysconfig/iptables
+    then
+        sed -i "/$chain/d" /etc/sysconfig/iptables
+    fi
+}
+
+_service() {
+    local FN=${FUNCNAME[0]}
+    local action="$1"
+
+    systemctl "$action" "${svc}.service"
+
+    logger -p warning -t "$bn" "WARNING: $svc ${action}ed because of ${reason}"
+}
+
+except() {
+    RET=$?
+
+    logger -p err -s -t "$bn" "ERROR: script failure in function '$FN'"
+    exit $RET
+}
+
+main
+
+# {% endraw %}
+## EOF ##
